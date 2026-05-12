@@ -2,7 +2,7 @@
 
 Backend Engineer assignment for a coupon redemption system.
 
-This repository currently includes the Part A database model and local Docker setup.
+This repository includes the database model, local Docker setup, and a TypeScript API for coupon listing, creation, and redemption.
 
 ## Prerequisites
 
@@ -19,18 +19,19 @@ cp .env.example .env
 
 The example values are suitable for local development. The real `.env` file is ignored by Git.
 
-## Run PostgreSQL and Adminer
+## Run API, PostgreSQL and Adminer
 
-Start the local infrastructure:
+Start the local stack:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
 This starts:
 
 - PostgreSQL on `localhost:5433`
 - Adminer on `http://localhost:8081`
+- API on `http://localhost:3000`
 
 On first startup with an empty volume, PostgreSQL automatically runs:
 
@@ -74,6 +75,84 @@ Expected result after the seed script:
 -----------+---------+-------+-------------
          4 |       7 |     3 |           0
 ```
+
+## API Endpoints
+
+### Health
+
+```bash
+curl http://localhost:3000/health
+```
+
+### List Coupons
+
+```bash
+curl "http://localhost:3000/coupons?page=1&pageSize=10"
+```
+
+The endpoint follows the assignment requirement and accepts `page` and `pageSize` as query parameters.
+Those values are validated with Zod and passed to PostgreSQL through `pg` parameter binding.
+They are never interpolated into SQL strings. The implementation also uses named `pg` prepared statements for the main queries.
+
+Returned coupons satisfy:
+
+- campaign status is `available`
+- coupon status is `available`
+- campaign is not expired
+- coupon is not expired, unless `expiration_timestamp` is `NULL`
+- future campaigns are included in the listing
+
+### Create Campaign And Coupon
+
+```bash
+curl -X POST http://localhost:3000/coupons \
+  -H "content-type: application/json" \
+  -d '{
+    "campaign": {
+      "name": "Spring Wellness Campaign",
+      "description": "Campaign description",
+      "status": "available",
+      "startTimestamp": "2026-05-01T00:00:00.000Z",
+      "endTimestamp": "2026-12-31T23:59:59.000Z",
+      "maxRedemptions": 100
+    },
+    "coupon": {
+      "code": "SPRING20",
+      "status": "available",
+      "expirationTimestamp": "2026-12-31T23:59:59.000Z",
+      "maxRedemptions": 5
+    }
+  }'
+```
+
+Campaigns are identified by unique `name`.
+If a campaign with the same name already exists, the API reuses it and creates only the coupon.
+
+### Redeem Coupon
+
+Get a seed user id:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "select id from users where email = '\''alice@example.com'\'';"'
+```
+
+```bash
+curl -X POST http://localhost:3000/coupons/SPRING10/redeem \
+  -H "content-type: application/json" \
+  -d '{"userId":"<seed-user-id>"}'
+```
+
+Authentication is intentionally out of scope for this assignment iteration.
+The endpoint receives `userId` in the request body so the redemption rules can be exercised directly.
+
+Redemption is executed inside a PostgreSQL transaction.
+The API locks the target coupon and campaign rows with `SELECT ... FOR UPDATE`, validates availability and limits while locked, inserts the redemption record, and increments both counters in the same transaction.
+
+## SQL Safety
+
+All database access uses `pg` parameterized queries.
+User-controlled input, including query parameters and path parameters, is validated before use and is passed as bind values (`$1`, `$2`, etc.).
+The API does not build SQL by concatenating request values.
 
 ## Reset Local Database
 
