@@ -13,6 +13,8 @@ docker compose down -v
 docker compose up -d --build
 ```
 
+Questo esegue prima le migrations, poi il seed locale, poi avvia l'API.
+
 Controlla lo stato:
 
 ```bash

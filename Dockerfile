@@ -21,6 +21,8 @@ ENV PORT=3000
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY migrations ./migrations
+COPY db/002_seed_test_data.sql ./db/002_seed_test_data.sql
 
 EXPOSE 3000
 

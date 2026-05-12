@@ -33,12 +33,13 @@ This starts:
 - Adminer on `http://localhost:8081`
 - API on `http://localhost:3000`
 
-On first startup with an empty volume, PostgreSQL automatically runs:
+On startup, Docker Compose runs two one-shot services before the API starts:
 
-- `db/001_schema.sql`
-- `db/002_seed_test_data.sql`
+- `migrate`: applies SQL migrations from `migrations/`
+- `seed`: loads local development seed data from `db/002_seed_test_data.sql`
 
-These scripts create the schema, constraints, relationships, indexes, triggers, and local test data.
+The migration runner stores applied migrations in `schema_migrations`, including a checksum, so changed already-applied migrations are detected.
+Seed data is idempotent and intended for local development.
 
 ## Adminer Login
 
@@ -74,6 +75,12 @@ Expected result after the seed script:
  campaigns | coupons | users | redemptions
 -----------+---------+-------+-------------
          4 |       7 |     3 |           0
+```
+
+Verify applied migrations:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select name, applied_at from schema_migrations order by applied_at;"'
 ```
 
 ## API Endpoints
@@ -156,16 +163,16 @@ The API does not build SQL by concatenating request values.
 
 ## Reset Local Database
 
-To recreate the database from scratch and rerun the initialization scripts:
+To recreate the database from scratch and rerun migrations plus seed:
 
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose up -d --build
 ```
 
 ## Database Documentation
 
 - Relational schema: `docs/RELATIONAL_SCHEMA.md`
 - Part A database model PDF: `docs/Part_A_Domain_Modelling_and_Database_Design.pdf`
-- SQL schema: `db/001_schema.sql`
+- SQL migrations: `migrations/`
 - Test seed data: `db/002_seed_test_data.sql`
