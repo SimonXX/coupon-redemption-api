@@ -19,7 +19,7 @@ cp .env.example .env
 
 The example values are suitable for local development. The real `.env` file is ignored by Git.
 
-## Run API, PostgreSQL and Adminer
+## Run API, PostgreSQL, Adminer and Swagger UI
 
 Start the local stack:
 
@@ -32,6 +32,7 @@ This starts:
 - PostgreSQL on `localhost:5433`
 - Adminer on `http://localhost:8081`
 - API on `http://localhost:3000`
+- Swagger UI on `http://localhost:8082`
 
 On startup, Docker Compose runs two one-shot services before the API starts:
 
@@ -110,6 +111,26 @@ Database: coupon_redemption
 ```
 
 Important: inside Docker Compose, the PostgreSQL hostname is `postgres`, not `localhost`.
+
+## OpenAPI Browser Console
+
+Open:
+
+```text
+http://localhost:8082
+```
+
+Swagger UI loads the versioned contract in `docs/openapi.yaml` and can execute live requests against the API.
+The default OpenAPI server points to `http://localhost:3000`; if `API_PORT` is changed, update the server port in the UI before sending requests.
+
+The API enables CORS only for the local Swagger UI origin configured by Docker Compose.
+With the default `.env.example` values, that origin is `http://localhost:8082`.
+
+After a fresh seeded bootstrap, the redemption example is immediately usable with Alice's stable test id:
+
+```text
+11111111-1111-4111-8111-111111111111
+```
 
 ## Verify The Database
 

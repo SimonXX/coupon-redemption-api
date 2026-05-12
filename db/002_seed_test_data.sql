@@ -1,10 +1,10 @@
 BEGIN;
 
-INSERT INTO users (email, role)
+INSERT INTO users (id, email, role)
 VALUES
-    ('alice@example.com', 'user'),
-    ('bob@example.com', 'user'),
-    ('admin@example.com', 'admin')
+    ('11111111-1111-4111-8111-111111111111', 'alice@example.com', 'user'),
+    ('22222222-2222-4222-8222-222222222222', 'bob@example.com', 'user'),
+    ('33333333-3333-4333-8333-333333333333', 'admin@example.com', 'admin')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO campaigns (
