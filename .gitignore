@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Test output
+coverage/
+.nyc_output/
+
+# Runtime files
+logs/
+*.log
+*.pid
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local caches
+.cache/
+.temp/
+tmp/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
