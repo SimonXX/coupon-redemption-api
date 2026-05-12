@@ -11,7 +11,11 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc --project tsconfig.json",
-    "typecheck": "tsc --noEmit --project tsconfig.json"
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
+    "migrate:prod": "node dist/migrate.js",
+    "seed:prod": "node dist/seed.js"
   },
   "repository": {
     "type": "git",

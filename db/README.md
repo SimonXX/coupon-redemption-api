@@ -1,32 +1,29 @@
 # Database Scripts
 
-This directory contains explicit PostgreSQL scripts for the assignment.
+This directory contains local development seed data for the assignment.
 
 The database itself is created by Docker through `POSTGRES_DB` in `.env`.
-The SQL scripts here create the schema and optional test data inside that database.
+The schema is managed through SQL migrations in `migrations/`.
 
 ## Files
 
-- `001_schema.sql`: creates extensions, tables, relationships, constraints, indexes, and update timestamp triggers.
 - `002_seed_test_data.sql`: inserts deterministic test data for local manual testing.
 
-## Planned Execution
+## Execution
 
-These scripts are mounted by `docker-compose.yml` into `/docker-entrypoint-initdb.d`.
-PostgreSQL runs them automatically when the database volume is created for the first time.
+Docker Compose runs the `seed` one-shot service after migrations complete.
 
-To recreate the database from scratch:
+To recreate the database from scratch and run migrations plus seed:
 
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose up -d --build
 ```
 
 For manual re-application during local development, use:
 
 ```bash
-docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/001_schema.sql
-docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/002_seed_test_data.sql
+npm run seed
 ```
 
 From inside Adminer:

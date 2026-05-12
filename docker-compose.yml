@@ -1,13 +1,43 @@
 services:
+  migrate:
+    image: coupon-redemption-api:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coupon-redemption-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+    command: ["npm", "run", "migrate:prod"]
+    networks:
+      - coupon-redemption
+
+  seed:
+    image: coupon-redemption-api:local
+    container_name: coupon-redemption-seed
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+    command: ["npm", "run", "seed:prod"]
+    networks:
+      - coupon-redemption
+
   api:
+    image: coupon-redemption-api:local
     build:
       context: .
       dockerfile: Dockerfile
     container_name: coupon-redemption-api
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -30,8 +60,6 @@ services:
       - "${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./db/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
-      - ./db/002_seed_test_data.sql:/docker-entrypoint-initdb.d/002_seed_test_data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s

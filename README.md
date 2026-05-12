@@ -33,12 +33,63 @@ This starts:
 - Adminer on `http://localhost:8081`
 - API on `http://localhost:3000`
 
-On first startup with an empty volume, PostgreSQL automatically runs:
+On startup, Docker Compose runs two one-shot services before the API starts:
 
-- `db/001_schema.sql`
-- `db/002_seed_test_data.sql`
+- `migrate`: applies SQL migrations from `migrations/`
+- `seed`: loads local development seed data from `db/002_seed_test_data.sql`
 
-These scripts create the schema, constraints, relationships, indexes, triggers, and local test data.
+The migration runner stores applied migrations in `schema_migrations`, including a checksum, so changed already-applied migrations are detected.
+Seed data is idempotent and intended for local development.
+
+## Database Setup Modes
+
+The repository supports two practical database bootstrap modes.
+
+### Recommended: Migration Runner
+
+This is the default path used by Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
+Flow:
+
+```text
+postgres -> migrate -> seed -> api
+```
+
+- `migrate` applies versioned SQL migrations from `migrations/`
+- `schema_migrations` records what has already been applied
+- `seed` inserts local development data from `db/002_seed_test_data.sql`
+
+This is the preferred mode because it supports schema evolution without requiring a destructive database reset.
+
+### Manual SQL Script Execution
+
+The same schema SQL and seed SQL can also be applied manually through `psql`.
+This is useful for explicit review or for stepping through the database bootstrap yourself.
+
+Start only PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+Apply the schema migration SQL directly:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < migrations/001_create_schema.sql
+```
+
+Apply the seed script directly:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/002_seed_test_data.sql
+```
+
+This manual path applies the same SQL artifacts, but it does not insert a record into `schema_migrations`.
+For normal project use, prefer the migration runner mode above.
 
 ## Adminer Login
 
@@ -74,6 +125,12 @@ Expected result after the seed script:
  campaigns | coupons | users | redemptions
 -----------+---------+-------+-------------
          4 |       7 |     3 |           0
+```
+
+Verify applied migrations:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select name, applied_at from schema_migrations order by applied_at;"'
 ```
 
 ## API Endpoints
@@ -156,16 +213,15 @@ The API does not build SQL by concatenating request values.
 
 ## Reset Local Database
 
-To recreate the database from scratch and rerun the initialization scripts:
+To recreate the database from scratch and rerun migrations plus seed:
 
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose up -d --build
 ```
 
 ## Database Documentation
 
-- Relational schema: `docs/RELATIONAL_SCHEMA.md`
 - Part A database model PDF: `docs/Part_A_Domain_Modelling_and_Database_Design.pdf`
-- SQL schema: `db/001_schema.sql`
+- SQL migrations: `migrations/`
 - Test seed data: `db/002_seed_test_data.sql`
