@@ -87,5 +87,6 @@ docker compose up -d
 ## Database Documentation
 
 - Relational schema: `docs/RELATIONAL_SCHEMA.md`
+- Part A database model PDF: `docs/Part_A_Domain_Modelling_and_Database_Design.pdf`
 - SQL schema: `db/001_schema.sql`
 - Test seed data: `db/002_seed_test_data.sql`
