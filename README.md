@@ -41,6 +41,56 @@ On startup, Docker Compose runs two one-shot services before the API starts:
 The migration runner stores applied migrations in `schema_migrations`, including a checksum, so changed already-applied migrations are detected.
 Seed data is idempotent and intended for local development.
 
+## Database Setup Modes
+
+The repository supports two practical database bootstrap modes.
+
+### Recommended: Migration Runner
+
+This is the default path used by Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
+Flow:
+
+```text
+postgres -> migrate -> seed -> api
+```
+
+- `migrate` applies versioned SQL migrations from `migrations/`
+- `schema_migrations` records what has already been applied
+- `seed` inserts local development data from `db/002_seed_test_data.sql`
+
+This is the preferred mode because it supports schema evolution without requiring a destructive database reset.
+
+### Manual SQL Script Execution
+
+The same schema SQL and seed SQL can also be applied manually through `psql`.
+This is useful for explicit review or for stepping through the database bootstrap yourself.
+
+Start only PostgreSQL:
+
+```bash
+docker compose up -d postgres
+```
+
+Apply the schema migration SQL directly:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < migrations/001_create_schema.sql
+```
+
+Apply the seed script directly:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < db/002_seed_test_data.sql
+```
+
+This manual path applies the same SQL artifacts, but it does not insert a record into `schema_migrations`.
+For normal project use, prefer the migration runner mode above.
+
 ## Adminer Login
 
 Open:
