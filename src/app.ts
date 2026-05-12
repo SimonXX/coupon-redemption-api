@@ -1,4 +1,6 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
+import { config } from "./config.js";
 import { registerErrorHandler } from "./errors.js";
 import { pool } from "./db.js";
 import { registerCouponRoutes } from "./modules/coupons/coupon.routes.js";
@@ -6,6 +8,12 @@ import { registerCouponRoutes } from "./modules/coupons/coupon.routes.js";
 export function buildApp() {
   const app = Fastify({
     logger: true
+  });
+
+  app.register(cors, {
+    origin: config.CORS_ORIGIN,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["content-type"]
   });
 
   registerErrorHandler(app);

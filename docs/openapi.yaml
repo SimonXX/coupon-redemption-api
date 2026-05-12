@@ -1,0 +1,479 @@
+openapi: 3.0.3
+info:
+  title: Coupon Redemption API
+  version: 1.0.0
+  description: >
+    Interactive contract for the assignment API. Authentication is intentionally
+    out of scope; redemption uses an explicit userId payload so business rules can
+    be exercised directly.
+servers:
+  - url: http://localhost:{port}
+    description: Local Docker Compose API
+    variables:
+      port:
+        default: "3000"
+tags:
+  - name: Health
+  - name: Coupons
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      operationId: getHealth
+      summary: Check API and database readiness
+      responses:
+        "200":
+          description: API and PostgreSQL are reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+                database: ok
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /coupons:
+    get:
+      tags:
+        - Coupons
+      operationId: listCoupons
+      summary: List available non-expired coupons
+      description: >
+        Returns available coupons whose campaigns are not expired and whose
+        coupon-specific expiration timestamp is either absent or still valid.
+        Future campaigns remain visible in this administrative listing.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated coupon listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCouponsResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags:
+        - Coupons
+      operationId: createCoupon
+      summary: Create a coupon and create or reuse its campaign
+      description: >
+        Campaign identity is based on the unique campaign name. If a campaign
+        with the same name already exists, the API reuses it and creates only the
+        coupon.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCouponRequest"
+            example:
+              campaign:
+                name: Spring Wellness Campaign
+                description: Campaign description
+                status: available
+                startTimestamp: "2026-05-01T00:00:00.000Z"
+                endTimestamp: "2026-12-31T23:59:59.000Z"
+                maxRedemptions: 100
+              coupon:
+                code: SPRING20
+                status: available
+                expirationTimestamp: "2026-12-31T23:59:59.000Z"
+                maxRedemptions: 5
+      responses:
+        "201":
+          description: Coupon created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateCouponResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /coupons/{code}/redeem:
+    post:
+      tags:
+        - Coupons
+      operationId: redeemCoupon
+      summary: Redeem a coupon code for a user
+      description: >
+        The API executes redemption transactionally, checks campaign and coupon
+        availability, stores the redemption event, and increments both counters.
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Coupon code to redeem
+          schema:
+            type: string
+            minLength: 1
+          example: SPRING10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedeemCouponRequest"
+            example:
+              userId: 11111111-1111-4111-8111-111111111111
+      responses:
+        "201":
+          description: Coupon redeemed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedeemCouponResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: One-based result page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+  responses:
+    ValidationError:
+      description: Request payload or query parameters are invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+    NotFoundError:
+      description: Referenced user or coupon was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: COUPON_NOT_FOUND
+            message: Coupon does not exist
+    ConflictError:
+      description: Business rule or uniqueness conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: COUPON_ALREADY_REDEEMED
+            message: User already redeemed this coupon
+    InternalServerError:
+      description: Unexpected server-side error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: INTERNAL_SERVER_ERROR
+            message: Unexpected server error
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - database
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        database:
+          type: string
+          enum:
+            - ok
+            - unknown
+    Status:
+      type: string
+      enum:
+        - available
+        - not-available
+    Campaign:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - description
+        - status
+        - startTimestamp
+        - endTimestamp
+        - maxRedemptions
+        - redemptionsCount
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/Status"
+        startTimestamp:
+          type: string
+          format: date-time
+        endTimestamp:
+          type: string
+          format: date-time
+        maxRedemptions:
+          type: integer
+          minimum: 0
+          nullable: true
+        redemptionsCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Coupon:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - status
+        - expirationTimestamp
+        - maxRedemptions
+        - redemptionsCount
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        status:
+          $ref: "#/components/schemas/Status"
+        expirationTimestamp:
+          type: string
+          format: date-time
+          nullable: true
+        maxRedemptions:
+          type: integer
+          minimum: 0
+          nullable: true
+        redemptionsCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CouponWithCampaign:
+      allOf:
+        - $ref: "#/components/schemas/Coupon"
+        - type: object
+          additionalProperties: false
+          required:
+            - campaign
+          properties:
+            campaign:
+              $ref: "#/components/schemas/Campaign"
+    CreatedCoupon:
+      allOf:
+        - $ref: "#/components/schemas/Coupon"
+        - type: object
+          additionalProperties: false
+          required:
+            - campaignId
+          properties:
+            campaignId:
+              type: string
+              format: uuid
+    ListCouponsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - page
+        - pageSize
+        - total
+        - items
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CouponWithCampaign"
+    CreateCampaignInput:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - status
+        - startTimestamp
+        - endTimestamp
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+          nullable: true
+        status:
+          $ref: "#/components/schemas/Status"
+        startTimestamp:
+          type: string
+          format: date-time
+        endTimestamp:
+          type: string
+          format: date-time
+        maxRedemptions:
+          type: integer
+          minimum: 0
+          nullable: true
+    CreateCouponInput:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - status
+      properties:
+        code:
+          type: string
+          minLength: 1
+        status:
+          $ref: "#/components/schemas/Status"
+        expirationTimestamp:
+          type: string
+          format: date-time
+          nullable: true
+        maxRedemptions:
+          type: integer
+          minimum: 0
+          nullable: true
+    CreateCouponRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - campaign
+        - coupon
+      properties:
+        campaign:
+          $ref: "#/components/schemas/CreateCampaignInput"
+        coupon:
+          $ref: "#/components/schemas/CreateCouponInput"
+    CreateCouponResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - campaign
+        - coupon
+      properties:
+        campaign:
+          $ref: "#/components/schemas/Campaign"
+        coupon:
+          $ref: "#/components/schemas/CreatedCoupon"
+    RedeemCouponRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+    Redemption:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - userId
+        - couponId
+        - redeemedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        couponId:
+          type: string
+          format: uuid
+        redeemedAt:
+          type: string
+          format: date-time
+    RedeemCouponResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - redemption
+      properties:
+        redemption:
+          $ref: "#/components/schemas/Redemption"
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    ValidationIssue:
+      type: object
+      additionalProperties: true
+      description: Zod validation issue returned by the API error handler
+    ValidationErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          additionalProperties: false
+          required:
+            - issues
+          properties:
+            issues:
+              type: array
+              items:
+                $ref: "#/components/schemas/ValidationIssue"

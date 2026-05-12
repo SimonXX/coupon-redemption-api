@@ -42,6 +42,7 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 3000
+      CORS_ORIGIN: http://localhost:${SWAGGER_UI_PORT:?SWAGGER_UI_PORT is required}
       DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
     ports:
       - "${API_PORT:?API_PORT is required}:3000"
@@ -77,6 +78,22 @@ services:
         condition: service_healthy
     ports:
       - "${ADMINER_PORT:?ADMINER_PORT is required}:8080"
+    networks:
+      - coupon-redemption
+
+  swagger-ui:
+    image: docker.swagger.io/swaggerapi/swagger-ui
+    container_name: coupon-redemption-swagger-ui
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      SWAGGER_JSON: /openapi/openapi.yaml
+    ports:
+      - "${SWAGGER_UI_PORT:?SWAGGER_UI_PORT is required}:8080"
+    volumes:
+      - ./docs/openapi.yaml:/openapi/openapi.yaml:ro
     networks:
       - coupon-redemption
 
