@@ -126,11 +126,17 @@ The default OpenAPI server points to `http://localhost:3000`; if `API_PORT` is c
 The API enables CORS only for the local Swagger UI origin configured by Docker Compose.
 With the default `.env.example` values, that origin is `http://localhost:8082`.
 
-After a fresh seeded bootstrap, the redemption example is immediately usable with Alice's stable test id:
+The local seed script assigns stable UUIDs only to the three demo users.
+This is a test-fixture choice, not an application-level identity strategy: the schema still defaults newly inserted user ids to PostgreSQL-generated UUIDs.
+
+Keeping seeded users stable makes the Swagger redemption example repeatable after every clean bootstrap and lets a reviewer try the flow without first querying the database.
+After a fresh seeded bootstrap, Alice can be used immediately with:
 
 ```text
 11111111-1111-4111-8111-111111111111
 ```
+
+The same id can still be retrieved from PostgreSQL through the query shown in the redemption section below.
 
 ## Verify The Database
 
@@ -176,8 +182,9 @@ Returned coupons satisfy:
 
 - campaign status is `available`
 - coupon status is `available`
-- campaign is not expired
-- coupon is not expired, unless `expiration_timestamp` is `NULL`
+- a campaign is expired only when `end_timestamp < now()`
+- a coupon is expired only when `expiration_timestamp IS NOT NULL AND expiration_timestamp < now()`
+- `expiration_timestamp IS NULL` means no coupon-specific expiration; the coupon is still constrained by its campaign validity window
 - future campaigns are included in the listing
 
 ### Create Campaign And Coupon
@@ -225,6 +232,14 @@ The endpoint receives `userId` in the request body so the redemption rules can b
 
 Redemption is executed inside a PostgreSQL transaction.
 The API locks the target coupon and campaign rows with `SELECT ... FOR UPDATE`, validates availability and limits while locked, inserts the redemption record, and increments both counters in the same transaction.
+
+Double redemption by the same user for the same coupon is prevented in two layers:
+
+- the service checks for an existing redemption before inserting
+- PostgreSQL enforces `UNIQUE (user_id, coupon_id)` on `redemptions`, which remains the final protection under races
+
+Limit checks also run while the coupon and campaign rows are locked.
+For example, if 10 concurrent requests target the last remaining redemption slot, the transactions serialize on those rows; only the first successful request can consume the slot, and the remaining requests observe the updated counters and receive a conflict response instead of exceeding the configured limits.
 
 ## SQL Safety
 
