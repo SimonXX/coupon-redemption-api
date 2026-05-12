@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS campaigns (
@@ -113,5 +111,3 @@ CREATE TRIGGER coupons_set_updated_at
     BEFORE UPDATE ON coupons
     FOR EACH ROW
     EXECUTE FUNCTION set_updated_at();
-
-COMMIT;

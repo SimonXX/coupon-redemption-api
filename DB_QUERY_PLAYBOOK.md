@@ -596,10 +596,10 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-Questo ricrea il volume, riesegue:
+Questo ricrea il volume, esegue:
 
 ```text
-db/001_schema.sql
+migrations/001_create_schema.sql
 db/002_seed_test_data.sql
 ```
 
@@ -610,6 +610,20 @@ e torna allo stato iniziale:
 7 coupons
 3 users
 0 redemptions
+```
+
+## 10.1 Migration Tracking
+
+```sql
+select name, checksum, applied_at
+from schema_migrations
+order by applied_at;
+```
+
+Atteso:
+
+```text
+001_create_schema.sql
 ```
 
 ## 11. Lock E Transazioni
