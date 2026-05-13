@@ -26,10 +26,10 @@ VALUES
     ),
     (
         'Future Nutrition Campaign',
-        'Future campaign that should appear in admin listings but cannot be redeemed yet.',
+        'Future campaign fixed to September 2026 for stable listing versus redeem checks.',
         'available',
-        now() + interval '7 days',
-        now() + interval '37 days',
+        '2026-09-01T00:00:00.000Z',
+        '2026-12-31T23:59:59.000Z',
         NULL
     ),
     (
@@ -89,7 +89,7 @@ FROM (
         (
             'FUTURE10',
             'available',
-            now() + interval '37 days',
+            '2026-12-31T23:59:59.000Z',
             NULL::integer,
             'Future Nutrition Campaign'
         ),
