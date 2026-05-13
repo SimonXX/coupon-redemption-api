@@ -302,8 +302,11 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-## Database Documentation
+## Documentation and Review Aids
 
 - Part A database model PDF: `docs/Part_A_Domain_Modelling_and_Database_Design.pdf`
+- Design and delivery record PDF: `docs/DESIGN_AND_DELIVERY_RECORD.pdf`
 - SQL migrations: `migrations/`
 - Test seed data: `db/002_seed_test_data.sql`
+- Manual API test playbook: `playbooks/MANUAL_API_TESTS.md`
+- Database query playbook: `playbooks/DB_QUERY_PLAYBOOK.md`

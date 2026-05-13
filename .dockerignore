@@ -6,3 +6,9 @@ coverage
 *.md
 docs
 docker-compose.yml
+playbooks
+reports
+scripts
+tests
+tsconfig.test.json
+vitest.config.ts
