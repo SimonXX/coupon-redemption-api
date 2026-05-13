@@ -4,6 +4,11 @@ Backend Engineer assignment for a coupon redemption system.
 
 This repository includes the database model, local Docker setup, and a TypeScript API for coupon listing, creation, and redemption.
 
+## Key Review Documents
+
+- Part A database model PDF: `docs/Part_A_Domain_Modelling_and_Database_Design.pdf`
+- Design and delivery record PDF: `docs/DESIGN_AND_DELIVERY_RECORD.pdf`
+
 ## Prerequisites
 
 - Docker
@@ -302,10 +307,8 @@ docker compose down -v
 docker compose up -d --build
 ```
 
-## Documentation and Review Aids
+## Additional Review Aids
 
-- Part A database model PDF: `docs/Part_A_Domain_Modelling_and_Database_Design.pdf`
-- Design and delivery record PDF: `docs/DESIGN_AND_DELIVERY_RECORD.pdf`
 - SQL migrations: `migrations/`
 - Test seed data: `db/002_seed_test_data.sql`
 - Manual API test playbook: `playbooks/MANUAL_API_TESTS.md`
