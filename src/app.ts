@@ -7,7 +7,7 @@ import { registerCouponRoutes } from "./modules/coupons/coupon.routes.js";
 
 export function buildApp() {
   const app = Fastify({
-    logger: true
+    logger: config.NODE_ENV !== "test"
   });
 
   app.register(cors, {

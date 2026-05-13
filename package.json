@@ -12,6 +12,11 @@
     "start": "node dist/server.js",
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit --project tsconfig.json",
+    "typecheck:test": "tsc --noEmit --project tsconfig.test.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo:concurrency": "tsx scripts/redemption-concurrency-demo.ts",
+    "demo:concurrency:5-slots": "CONCURRENCY_USERS=50 CONCURRENCY_LIMIT=5 tsx scripts/redemption-concurrency-demo.ts",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
     "migrate:prod": "node dist/migrate.js",
@@ -36,9 +41,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^11.14.0",
     "@types/node": "^25.7.0",
     "@types/pg": "^8.20.0",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
   }
 }
