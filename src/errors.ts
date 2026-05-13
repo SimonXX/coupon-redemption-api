@@ -17,6 +17,11 @@ type PgError = Error & {
   constraint?: string;
 };
 
+type HttpClientError = Error & {
+  code?: string;
+  statusCode: number;
+};
+
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler(
     async (
@@ -36,6 +41,13 @@ export function registerErrorHandler(app: FastifyInstance): void {
           error: "VALIDATION_ERROR",
           message: "Invalid request payload",
           issues: error.issues
+        });
+      }
+
+      if (isHttpClientError(error)) {
+        return reply.status(error.statusCode).send({
+          error: error.code ?? "BAD_REQUEST",
+          message: error.message
         });
       }
 
@@ -67,5 +79,15 @@ export function registerErrorHandler(app: FastifyInstance): void {
         message: "Unexpected server error"
       });
     }
+  );
+}
+
+function isHttpClientError(error: unknown): error is HttpClientError {
+  return (
+    error instanceof Error &&
+    "statusCode" in error &&
+    typeof error.statusCode === "number" &&
+    error.statusCode >= 400 &&
+    error.statusCode < 500
   );
 }

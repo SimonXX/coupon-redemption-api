@@ -96,6 +96,7 @@ curl -s "$BASE_URL/coupons?page=1&pageSize=20"
 Controlla che `FUTURE10` sia incluso.
 
 Ragione: il requisito chiede di includere campagne future nella listing admin se non sono scadute e hanno status `available`.
+Nel seed questa campagna parte il `2026-09-01`, quindi il caso resta stabile anche se il progetto viene testato giorni dopo il bootstrap.
 
 ### 3.4 Coupon scaduto escluso
 

@@ -180,6 +180,9 @@ SPRING10
 FUTURE10
 ```
 
+`FUTURE10` appartiene a una campagna con start date assoluta `2026-09-01`.
+Questo evita che il caso "future campaign visible in listing but not redeemable yet" dipenda dal giorno in cui viene lanciato il seed.
+
 ## 5. Redemption Records
 
 ### Tutte le redemption
@@ -733,3 +736,5 @@ Atteso su seed:
 ```text
 Future Nutrition Campaign
 ```
+
+Nel seed questa campagna parte il `2026-09-01`, quindi resta futura per una verifica eseguita nei giorni successivi alla consegna.

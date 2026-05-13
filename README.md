@@ -247,6 +247,52 @@ All database access uses `pg` parameterized queries.
 User-controlled input, including query parameters and path parameters, is validated before use and is passed as bind values (`$1`, `$2`, etc.).
 The API does not build SQL by concatenating request values.
 
+## Automated Integration Tests
+
+Run the Part C suite with:
+
+```bash
+npm test
+```
+
+Optional static checking for the test sources:
+
+```bash
+npm run typecheck:test
+```
+
+The integration suite uses Testcontainers to start a disposable PostgreSQL `16-alpine` instance for the test run.
+Before every test, it drops and recreates the `public` schema, reapplies `migrations/001_create_schema.sql`, and reloads `db/002_seed_test_data.sql`.
+
+This keeps every test isolated and repeatable while avoiding the overhead of booting a fresh PostgreSQL container for each individual test.
+The tests exercise the real Fastify routes through `app.inject()`, so SQL constraints, transaction behavior, and the redemption concurrency path are covered against PostgreSQL rather than mocks.
+
+## Concurrency Demo
+
+With the Docker Compose stack running, launch a visual redemption concurrency simulation:
+
+```bash
+npm run demo:concurrency
+```
+
+By default, the script creates 50 temporary users and fires 50 parallel redemption requests against a coupon with one available redemption slot.
+The output shows a compact status grid, success/conflict bars, latency summary, and final database counters.
+
+For a less extreme scenario with five available slots and 50 concurrent users:
+
+```bash
+npm run demo:concurrency:5-slots
+```
+
+You can tune the scenario through environment variables:
+
+```bash
+CONCURRENCY_USERS=50 CONCURRENCY_LIMIT=10 npm run demo:concurrency
+```
+
+The demo uses the real API and the real PostgreSQL database configured through `.env`.
+It is intended as an interactive verification aid; the automated concurrency assertion remains in the integration test suite.
+
 ## Reset Local Database
 
 To recreate the database from scratch and rerun migrations plus seed:
