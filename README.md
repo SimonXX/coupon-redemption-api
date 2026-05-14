@@ -13,6 +13,8 @@ This repository includes the database model, local Docker setup, and a TypeScrip
 
 - Docker
 - Docker Compose v2
+- Node.js 22 or newer
+- npm
 
 ## Environment Setup
 
@@ -23,6 +25,15 @@ cp .env.example .env
 ```
 
 The example values are suitable for local development. The real `.env` file is ignored by Git.
+
+Install Node.js dependencies for local commands such as tests and demo scripts:
+
+```bash
+npm ci
+```
+
+The Docker Compose API image installs its own dependencies during the Docker build.
+The local `npm ci` step is required only when running project scripts from the host machine, such as `npm test`.
 
 ## Run API, PostgreSQL, Adminer and Swagger UI
 
@@ -254,6 +265,12 @@ The API does not build SQL by concatenating request values.
 
 ## Automated Integration Tests
 
+On a fresh clone, install dependencies before running tests:
+
+```bash
+npm ci
+```
+
 Run the Part C suite with:
 
 ```bash
@@ -267,6 +284,7 @@ npm run typecheck:test
 ```
 
 The integration suite uses Testcontainers to start a disposable PostgreSQL `16-alpine` instance for the test run.
+Docker must be running locally because Testcontainers starts PostgreSQL through the Docker runtime.
 Before every test, it drops and recreates the `public` schema, reapplies `migrations/001_create_schema.sql`, and reloads `db/002_seed_test_data.sql`.
 
 This keeps every test isolated and repeatable while avoiding the overhead of booting a fresh PostgreSQL container for each individual test.
